@@ -25,7 +25,8 @@
     "keywords": [
         "document",
         "doc",
-        "autodocblocker",
+		"autodocblocker",
+		"docblock",
         "comment"
     ],
     "activationEvents": [

@@ -2,6 +2,8 @@
 
 Simply provides an easy to use docblock generator with mininal amount of effort. Mainly tested with javascript and php. Very eary in development.
 
+Install at [Visuak Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=maddog986.autodocblocker) or download the .vsix file and [install manually](https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix).
+
 ## Features
 
 - Simple docblock builder. [What is a Docblock?](https://en.wikipedia.org/wiki/Docblock)

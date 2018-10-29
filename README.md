@@ -31,9 +31,9 @@ Notes:
 
 ## Known Issues
 
-- Extension is coded in Javascript (out of the normal, I didnt have time to figure out Typescript just yet).
-- Only tested with Javascript and PHP classes, functions and vars. Need to make more regex rules for other langauges.
-- Doesnt support every type of argument or variable type.
+- [ ] Extension is coded in Javascript (out of the normal, I didnt have time to figure out Typescript just yet).
+- [ ] Only tested with Javascript and PHP classes, functions and vars. Need to make more regex rules for other langauges.
+- [ ] Doesnt support every type of argument or variable type.
 
 ## Future development
 

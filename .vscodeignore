@@ -1,5 +1,8 @@
 .vscode/**
 .gitignore
+.gitattributes
 jsconfig.json
 autodocblocker*.vsix
 preview.gif
+.eslintrc.json
+package-lock.json

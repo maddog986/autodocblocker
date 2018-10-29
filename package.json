@@ -1,13 +1,13 @@
 {
-    "name": "docbuilder",
-    "displayName": "docbuilder",
-    "description": "Easy docblocks cross language supported.",
-    "version": "0.0.1",
+    "name": "autodocblocker",
+    "displayName": "autodocblocker",
+    "description": "Auto generated docblocks using regex. Multiple languages supported.",
+    "version": "1.0.0",
     "publisher": "maddog986",
     "author": {
         "name": "Drew Gauderman"
     },
-    "license": "SEE LICENSE IN LICENSE.txt",
+    "license": "GPL-3.0-or-later",
     "engines": {
         "vscode": "^1.28.2"
     },
@@ -17,23 +17,23 @@
     "keywords": [
         "document",
         "doc",
-        "docbuilder",
+        "autodocblocker",
         "comment"
     ],
     "activationEvents": [
-        "onCommand:extension.docbuilder"
+        "onCommand:extension.autodocblocker"
     ],
     "main": "./src/extension",
     "contributes": {
         "commands": [
             {
-                "command": "extension.docbuilder",
-                "title": "docbuilder"
+                "command": "extension.autodocblocker",
+                "title": "Run autodocblocker on selected line."
             }
         ],
         "keybindings": [
             {
-                "command": "extension.docbuilder",
+                "command": "extension.autodocblocker",
                 "key": "ctrl+D",
                 "when": "editorTextFocus"
             }

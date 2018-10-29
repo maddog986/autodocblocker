@@ -1,11 +1,26 @@
+/**
+ * Program description.
+ * Copyright (C) 2018. Drew Gauderman
+
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 const vscode = require('vscode')
 const dateformat = require('dateformat')
 const nunjucks = require('nunjucks') //template engine
 const fs = require('fs')
 const configuration = require('./configuration')
-
-
-//vsce package
 
 /**
  * isBoolean
@@ -160,10 +175,10 @@ function getData(config, text, tempdata = {}, templateStr = '') {
  */
 exports.activate = (context) => {
 	//console logging
-	console.log('Extension "docbuilder" is now active.');
+	console.log('Extension "autodocblocker" is now active.');
 
 	// The command has been defined in the package.json file
-	context.subscriptions.push(vscode.commands.registerCommand('extension.docbuilder', async () => {
+	context.subscriptions.push(vscode.commands.registerCommand('extension.autodocblocker', async () => {
 		//basic stuff used if no package.json file exists in workspace folders
 		let json_package = {
 			version: '0.0.1',
@@ -326,56 +341,6 @@ exports.deactivate = () => {
 
 };
 
-
 /*
-var fileName = '.docbuilder.txt';
-
-var filePath = context.asAbsolutePath(fileName);
-console.log('filepath: ' + filePath);
-
-let text = vscode.workspace.openTextDocument(filePath).then((document) => {
-	console.log(document.getText());
-});
-
-let editorLinePos = new vscode.Position(editorLine, 0);
-
-let lineText = document.lineAt(editorLine).text;
-
-		//vscode.workspace.openTextDocument('./package.json').then((document) => {
-		//	return document.getText();
-		//});
-
-
-		//vscode.workspace.openTextDocument(context.asAbsolutePath('./package.json')).then((document) => {
-		//	console.log(document);
-		//})
-
-function replaceLine(editor, line, oldText, newText) {
-	editor.edit(function(edit) {
-		edit.replace(new vscode.Range(line, 0, line, oldText.length), newText);
-	});
-}
-
-// Display a message box to the user
-		vscode.window.showInformationMessage('Code inserted.');
-
-code samples
-https://github.com/Microsoft/vscode-extension-samples
-
-
-regex to remove all docblock: (^|\w?)/\*([^*]|[\r\n]|(\
-*+([^
-*
-/]|[\r\n])))*\*+/
-
-
-
-
-
-
-
-
-(?:(?<type>[\w]+)[\s])?(?<name>[&$\w.\->]+(?:(?<test>\['[\w]+\'])+)?)([\s=]{1,3}(?:(?<value>.['\w.,\}\{]+)))?(?=[,$]?)
-$arry['test']['test'], $bla->test, String $test, $bla={'test','bla'}, $bla.test, $test={'test'}, test=123.234
-
+to package up: vsce package
 */

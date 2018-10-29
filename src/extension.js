@@ -29,8 +29,8 @@ const configuration = require('./.autodocblocker')
  * @since	v0.0.1
  * @version	v1.0.0	Friday, October 26th, 2018
  * @global
- * @param	mixed  value
- * @return	boolean
+ * @param	{*}  value
+ * @return	{boolean}
  */
 function isBoolean(value) {
 	return typeof value === 'boolean' || value.toLowerCase() == 'false' || value.toLowerCase() == 'true';
@@ -43,8 +43,8 @@ function isBoolean(value) {
  * @since	v0.0.1
  * @version	v1.0.0	Friday, October 26th, 2018
  * @global
- * @param	mixed  value
- * @return	boolean
+ * @param	{*}  value
+ * @return	{boolean}
  */
 function isNumber(value) {
 	return typeof value === 'number' || !isNaN(value);
@@ -57,8 +57,8 @@ function isNumber(value) {
  * @since	v0.0.1
  * @version	v1.0.0	Friday, October 26th, 2018
  * @global
- * @param	mixed  value
- * @return	boolean
+ * @param	{*}  value
+ * @return	{boolean}
  */
 function isArray(value) {
 	if (value == '[') value = [];
@@ -77,8 +77,8 @@ function isArray(value) {
  * @since	v0.0.1
  * @version	v1.0.0	Saturday, October 27th, 2018
  * @global
- * @param	mixed  value
- * @return	void
+ * @param	{*}  value
+ * @return	{boolean}
  */
 function isObject(value) {
 	if (value == '{' || value == '{}') value = {};
@@ -97,9 +97,9 @@ function isObject(value) {
  * @since	v0.0.1
  * @version	v1.0.0	Friday, October 26th, 2018
  * @global
- * @param	mixed  name
- * @param	mixed  value
- * @return	void
+ * @param	{*}  name
+ * @param	{*}  value
+ * @return	{string}
  */
 function get_data_type(name, value) {
 	if (name && name.length > 0) return name; //custom name
@@ -120,11 +120,11 @@ function get_data_type(name, value) {
  * @since	v0.0.1
  * @version	v1.0.0	Friday, October 26th, 2018
  * @global
- * @param	mixed   config
- * @param	mixed   text
- * @param	object  tempdata     	Optional. Default: {}
- * @param	string  templateStr  	Optional. Default: ''
- * @return	object
+ * @param	{*}   		config
+ * @param	{*}   		text
+ * @param	{object}  	tempdata     	Optional. Default: {}
+ * @param	{string}  	templateStr  	Optional. Default: ''
+ * @return	{object}
  */
 function getData(config, text, tempdata = {}, templateStr = '') {
 

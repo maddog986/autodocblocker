@@ -31,14 +31,18 @@ Notes:
 
 ## Known Issues
 
-- Extension is coded in Javascript (out of the normal).
-- Only tested with Javascript and PHP. Need to make more regex rules for other langauges.
+- Extension is coded in Javascript (out of the normal, I didnt have time to figure out Typescript just yet).
+- Only tested with Javascript and PHP classes, functions and vars. Need to make more regex rules for other langauges.
 - Doesnt support every type of argument or variable type.
 
 ## Future development
 
 This was developed because i wanted something with more custimzation than the other docblocker extensions.
 I would love to add autocomplete supported DocBlick tags and better code detection handling but that is out of my scope of programming.
+
+### Long term Todo:
+
+- Convert the extension from JavasSript to Typescript.
 
 ## Release Notes
 

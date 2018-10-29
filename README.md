@@ -1,13 +1,77 @@
-# autodocblocker README
+# autodocblocker
 
-Provides an easy to use docblock generator. Mainly tested with javascript and php. Very eary in development.
+Simply provides an easy to use docblock generator with mininal amount of effort. Mainly tested with javascript and php. Very eary in development.
 
 ## Features
 
-Simple docblock builder.
-Uses nunjucks (https://mozilla.github.io/nunjucks/) for template handling.
-Imports workspace package.json file into template data.
-You can import your own set of rules be making a .autodocblocker.js within your workspace folder.
+- Simple docblock builder. [What is a Docblock?](https://en.wikipedia.org/wiki/Docblock)
+- Uses [nunjucks](https://mozilla.github.io/nunjucks/) for template handling.
+- Imports workspace [package.json](https://code.visualstudio.com/docs/extensionAPI/extension-manifest) file into template data.
+- You can import your own set of rules be creating a .autodocblocker.js within your root workspace folder.
+
+### By default, this extension makes DocBlocks like this:
+```php
+function test3($test = 'test') {}
+
+class test {
+	private $var_name;
+
+	private function __construct($test = '1.0.0', $test2 = null) {}
+}
+```
+
+Into this:
+```php
+/**
+ * test3
+ *
+ * @author	Your Name
+ * @since	v1.1.0
+ * @version	v1.0.0	Monday, October 29th, 2018
+ * @global
+ * @param	string	$test	Optional. Default: 'test'
+ * @return	void
+ */
+function test3($test = 'test') {}
+
+/**
+ * test.
+ *
+ * @author	Your Name
+ * @since	v1.1.0
+ * @version	v1.0.0	Monday, October 29th, 2018
+ * @global
+ */
+class test {
+	/**
+	 * @since	v1.1.0
+	 * @var		mixed	$var_name
+	 * @access	private
+	 */
+	private $var_name;
+
+	/**
+	 * __construct
+	 *
+	 * @author	Your Name
+	 * @since	v1.1.0
+	 * @version	v1.0.0	Monday, October 29th, 2018
+	 * @access	public
+	 * @param	string	$test 	Optional. Default: '1.0.0'
+	 * @param	mixed 	$test2	Optional. Default: null
+	 * @return	void
+	 */
+	public function __construct($test = '1.0.0', $test2 = null) {
+	}
+}
+```
+
+### Generating code:
+- Press Ctrl-D when line is on a variable, function or class. This will generate the docblock. As a bonous, each time you press Ctrl-D it will add a new @version tag.
+- Press Ctrl-D within an already generated DocBlock and it will do any nesscary updates to it (does not auto add @version like above).
+
+Notes:
+@version and @author is pulled from a workspace package.json file. If your folder does not have a package.json file, default is "@version 0.0.1" and "@author Unknown"
 
 ## Requirements
 
@@ -16,7 +80,7 @@ You can import your own set of rules be making a .autodocblocker.js within your 
 
 ## Extension Settings
 
-- By default press Ctrl-D when cursor is line of a variable, class, function.
+- By default press Ctrl-D when cursor is on line of a variable, class, or function.
 - You can place your own .autodocblocker.js file within a workspace folder to make your own dockblocks.
 
 ## Known Issues

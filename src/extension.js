@@ -20,7 +20,7 @@ const vscode = require('vscode')
 const dateformat = require('dateformat')
 const nunjucks = require('nunjucks') //template engine
 const fs = require('fs')
-const configuration = require('./configuration')
+const configuration = require('./.autodocblocker')
 
 /**
  * isBoolean
@@ -199,14 +199,14 @@ exports.activate = (context) => {
 			}
 		}
 
-		//find custom .docblocker.js file
+		//find custom .autodocblocker.js file
 		for (var folder of vscode.workspace.workspaceFolders) {
-			if (fs.existsSync(folder.uri.fsPath + "\\.docblocker.js")) {
+			if (fs.existsSync(folder.uri.fsPath + "\\.autodocblocker.js")) {
 				try {
-					eval(fs.readFileSync(folder.uri.fsPath + '\\.docblocker.js', 'utf8'));
+					eval(fs.readFileSync(folder.uri.fsPath + '\\.autodocblocker.js', 'utf8'));
 				} catch (error) {
-					console.log('docblocker.js load ERROR!', error)
-					vscode.window.showInformationMessage('docblocker.js load ERROR!');
+					console.log(".autodocblocker.js load ERROR!\n", error)
+					vscode.window.showInformationMessage('.autodocblocker.js load ERROR!');
 				}
 				break
 			}

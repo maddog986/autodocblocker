@@ -1,6 +1,6 @@
 # autodocblocker
 
-![Logo Image](https://raw.githubusercontent.com/maddog986/autodocblocker/master/images/autodocblocker.png)
+![Logo Image](https://raw.githubusercontent.com/maddog986/autodocblocker/alpha/images/autodocblocker.png)
 
 Simply provides an easy to use docblock generator with mininal amount of effort. Mainly tested with javascript and php. Very eary in development.
 
@@ -14,7 +14,7 @@ Install at [Visuak Studio Code Marketplace](https://marketplace.visualstudio.com
 - You can import your own set of rules be creating a .autodocblocker.js within your root workspace folder.
 
 ## Preview:
-![Preview}](https://raw.githubusercontent.com/maddog986/autodocblocker/master/images/preview.gif)
+![Preview}](https://raw.githubusercontent.com/maddog986/autodocblocker/alpha/images/preview.gif)
 
 ### Generating code:
 - Press Ctrl-D when line is on a variable, function or class. This will generate the docblock. As a bonous, each time you press Ctrl-D it will add a new @version tag.

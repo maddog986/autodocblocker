@@ -21,8 +21,10 @@ const namedRegexp = require("named-js-regexp") //vscode doesnt support es2018 re
 //author tag group
 const author = [
 	'{%- for auth in authors %}',
-	'{%- if (author.name|trim) == (auth.name|trim) %}{% set add_author = false %}{% endif %}',
-	' * @author	{{ auth.name|trim }}',
+		'{%- if (author.name|trim) == (auth.name|trim) %}',
+			'{%- set add_author = false %}',
+		'{%- endif %}',
+		' * @author	{{ auth.name|trim }}',
 	'{%- endfor %}',
 	'{%- if add_author == true %}',
 	' * @author	{{author.name|trim}}',
@@ -44,13 +46,13 @@ const version = [
 	'{%- set minor = 0 %}',
 	'{%- set patch = -1 %}',
 	'{%- for version in versions %}',
-	'{%- set major = version.major %}',
-	'{%- set minor = version.minor %}',
-	'{%- set patch = version.patch %}',
-	' * @version	v{{major}}.{{minor}}.{{patch}}	{{ version.date|trim }}',
+		'{%- set major = version.major %}',
+		'{%- set minor = version.minor %}',
+		'{%- set patch = version.patch %}',
+		' * @version	v{{major}}.{{minor}}.{{patch}}	{{ version.date|trim }}{{ version.description }}',
 	'{%- endfor %}',
 	'{%- if not started_within_block %}',
-	' * @version	v{{major}}.{{minor}}.{{(patch|int)+1}}	{{ now | date_format("dddd, mmmm dS, yyyy") }}',
+		' * @version	v{{major}}.{{minor}}.{{(patch|int)+1}}	{{ now | date_format("dddd, mmmm dS, yyyy") }}.',
 	'{%- endif %}'
 ]
 
@@ -82,7 +84,7 @@ module.exports = {
 	//existing params to check for when updating existing docblock
 	params: [{
 		name: 'versions',
-		regex: namedRegexp(/(?:@version)\tv(:<major>[\d]+).(:<minor>[\d]+).(:<patch>[\d]+)\t(:<date>[\w\s,]+)$/gmi)
+		regex: namedRegexp(/(?:@version)\tv(:<major>[\d]+).(:<minor>[\d]+).(:<patch>[\d]+)\t(:<date>[\w\s,]+)(:<description>.+)?$/gmi)
 	}, {
 		name: 'authors',
 		regex: namedRegexp(/(?:@author)\t(:<name>[\w\s<>@.]+)$/gmi)
@@ -97,7 +99,8 @@ module.exports = {
 		regex: namedRegexp(/(?:@todo)[\t\s]+(:<text>[\\/\$&\->\w\s.:'"\[\]{}\(\)]+)/gmi)
 	}, {
 		name: 'returns',
-		regex: namedRegexp(/(?:@return)[\t\s]+(:<text>[\\/\$&\->\w\s.:'"\[\]{}\(\)]+)/gmi)
+		//v1.0.0: regex: namedRegexp(/(?:@return)[\t\s]+(:<text>[\\/\$&\->\w\s.:'"\[\]{}\(\)]+)/gmi)
+		regex: namedRegexp(/(?:@return)[\t\s]?(:<text>.*)/g)
 	},{
 		name: 'previous_vars',
 		regex: namedRegexp(/@var[\s]+(:<type>[\w]+)[\s]+(:<name>[$&.\->\w]+)(?:[\s]+(:<description>[\\/\$&\->\w\s.:'"\[\]{}\(\)]+)$)?/gm)
@@ -109,11 +112,13 @@ module.exports = {
 	//what to look out for when checking the code, and the template to use to spit back out
 	checkers: [{
 		name: 'classes',
-		regex: namedRegexp(/(?:^|\t|\s)(?:(?:return )?new )?class[\s]?(:<name>[\w]+)?(?:[\(](:<args_full>[\$\-\>.\s\w,\[\]'"]+)[\)])?(?:\sextends\s(:<extends>[\w]+))?/gi),
+		regex: namedRegexp(/(?:^|\t|\s)(?:(:<return>return)?\s?new )?class\s?(?:(:<name>\w+)?(?:\((:<args_full>.*)\)))?(?:\s?extends\s(:<extends>\w+))?/gi),
+		//v1.0.0: regex: namedRegexp(/(?:^|\t|\s)(?:(?:return )?new )?class[\s]?(:<name>[\w]+)?(?:[\(](:<args_full>[\$\-\>.\s\w,\[\]'"]+)[\)])?(?:\sextends\s(:<extends>[\w]+))?/gi),
 		template: [{
 				name: 'args',
 				against: 'args_full',
-				regex: namedRegexp(/(:<value>[']{0,1}[$\w\s.]+[']{0,1})(?:[,\s]+|$)/g)
+				regex: namedRegexp(/(?:^|,[\s]+)(?:(:<type>[\w]+)[\s])?(:<name>[$\->\w]+)?[\s]?(:<seperator>=)?[\s]?(:<value>[$\w]+|[\d.]+|[{][^{}]*[}]|['][^']*[']|["][^"]*["]|[\[][^\[\]]*[\]])?/g)
+				///v1.0.0: regex: namedRegexp(/(?:^|,[\s]+)(?:(:<type>[\w]+)[\s])?(:<name>[$\->\w]+)?[\s]?(:<seperator>=)?[\s]?(:<value>[$\w]+|[\d.]+|[{][^{}]*[}]|['][^']*[']|["][^"]*["]|[\[][^\[\]]*[\]])?/g)
 			},
 			'{%- for class in classes -%}',
 				'/**',
@@ -135,7 +140,7 @@ module.exports = {
 				'{%- endif %}',
 
 				'{%- for arg in class.args %}',
-					' * @param	{{ "" | get_data_type(arg.value) | lower }}{% for p in previous_params %}{% if p.description and (p.name|trim) == (arg.name|trim) %}\t{{ p.description }}{% endif %}{% endfor %}',
+					' * @param	{{ arg.value | get_data_type | lower }}{% for p in previous_params %}{% if p.description and (p.name|trim) == (arg.name|trim) %}\t{{ p.description }}{% endif %}{% endfor %}',
 				'{%- endfor %}',
 
 				...global,
@@ -176,7 +181,7 @@ module.exports = {
 						'{%- endif %}',
 					'{%- endfor %}',
 
-					' * @var		{{ var.type | get_data_type(var.value) | lower}}	{{name | trim}}',
+					' * @var		{{ var.value | get_data_type | lower}}	{{name | trim}}',
 
 					'{%- if var.scope %}',
 						' * @access	{{var.scope}}',
@@ -191,14 +196,13 @@ module.exports = {
 		]
 	}, {
 		name: 'functions',
-		regex: namedRegexp(/(?:(:<scope>[\w]+)\s)?[\s;]?function (:<name>.+)\((:<args_full>.+)?\)/gi),
+		regex: namedRegexp(/(?:(:<scope>[\w]+)\s)?(?:(:<type>function)[\s])(:<name>[\w]+)\((:<args_full>.*)\)/gi),
+		//v1.0.0: regex: namedRegexp(/(?:(:<scope>[\w]+)\s)?[\s;]?function (:<name>.+)\((:<args_full>.+)?\)/gi),
 		template: [{
 				name: 'args',
 				against: 'args_full',
-				//regex: namedRegexp(/(:<name>[$\->\w\.?]+)(:<seperator>[\s=]+)?(:<value>[\w{}'"\.,\[\]]+)?(?:,|$|;)/gi)
-				//regex: namedRegexp(/(:<type>[\w]+[\s])?(:<name>[\&\$\-\>\w\.]+)(?: = (:<value>(?:['"\[\{]?)(?:[\w\s'",=.:]+)?(?:['"\]\}]?)))?(?:,|$)/g)
-				regex: namedRegexp(/(?:(:<type>[\w]+)[\s])?(:<name>[$\w->]+)([\s=]+(:<value>[->\w\s.'":\[\]{}]+))?(?:,|$)/g)
-
+				regex: namedRegexp("(?:^|,\\s?)(?:(?<name>[$\\w]+)?\\s?(?<seperator>=)\\s?)?(?<value>[&$\\w]+|[\\d.]+|\\{[^{}]*\\}|'[^']*'|\"[^\"]*\"|\\[[^\\[\\]]*\\])?", "g")
+				//v1.0.0: regex: namedRegexp(/(?:(:<type>[\w]+)[\s])?(:<name>[$\w->]+)([\s=]+(:<value>[->\w\s.'":\[\]{}]+))?(?:,|$)/g)
 			},
 			'{%- for function in functions -%}',
 				'/**',
@@ -221,42 +225,35 @@ module.exports = {
 
 				...global,
 
-				'{%- set name_max_length = 0 %}',
+				'{%- set max_type = 0 %}',
+				'{%- set max_name = 0 %}',
 				'{%- for arg in function.args %}',
-					'{%- set arg_name = (arg.name) %}',
-					'{%- if (arg_name | length) > name_max_length %}',
-						'{%- set name_max_length = (arg_name | length) %}',
+					'{%- set length = (arg.value | get_data_type | length) %}',
+					'{%- if (length > max_type) %}',
+						'{%- set max_type = length %}',
 					'{%- endif %}',
-				'{%- endfor -%}',
-
-				'{%- set type_max_length = 0 %}',
-				'{%- for arg in function.args %}',
-					'{%- set arg_type = (arg.type | get_data_type(arg.value) | lower) %}',
-					'{%- if (arg_type | length) > type_max_length %}',
-						'{%- set type_max_length = (arg_type | length) %}',
+					'{%- set length = (arg.name or arg.value) | length %}',
+					'{%- if (length > max_name) %}',
+						'{%- set max_name = length %}',
 					'{%- endif %}',
 				'{%- endfor -%}',
 
 				'{%- for arg in function.args %}', //start args
-					'{%- set arg_type = (arg.type | get_data_type(arg.value) | lower | make_length(type_max_length)) %}',
-					'{%- set arg_name = (arg.name | make_length(name_max_length)) %}',
-					'{%- set arg_desc = "" %}',
+					'{%- set type = (arg.value | get_data_type | make_length(max_type) ) %}',
+					'{%- set name = (arg.name or arg.value) | make_length(max_name)  %}',
+					'{%- set desc = "" %}',
 
-					'{%- if arg.value or (not arg.value and arg.seperator) %}',
-						'{%- set arg_desc = "Optional." %}',
-					'{%- endif %}',
-
-					'{%- if arg.value %}',
-						'{%- set arg_desc = arg_desc + " Default: " + arg.value %}',
+					'{%- if arg.seperator %}',
+						'{%- set desc = "Default: " + arg.value | trim %}',
 					'{%- endif %}',
 
 					'{%- for p in previous_params %}',
-						'{%- if p.description and (p.name|trim) == (arg.name|trim) %}',
-							'{%- set arg_desc = p.description %}',
+						'{%- if p.name == (name | trim) %}',
+							'{%- set desc = p.description %}',
 						'{%- endif %}',
 					'{%- endfor %}',
 
-					' * @param	{{ arg_type }}\t{{arg_name }}\t{{ arg_desc | trim }}',
+					' * @param	{{ type }}\t{{ name }}\t{{ desc }}',
 				'{%- endfor %}', //end args
 
 				'{%- for return in returns %}',
@@ -264,7 +261,11 @@ module.exports = {
 				'{%- endfor %}',
 
 				'{%- if not returns %}',
-					' * @return	void',
+					'{%- set returns = "void" %}',
+					'{%- if function.returns %}',
+						'{%- set returns = function.returns | default("mixed") | get_data_type %}',
+					'{%- endif %}',
+					' * @return	{{ returns }}',
 				'{%- endif %}',
 
 				...todo,

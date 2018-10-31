@@ -2,11 +2,12 @@
     "name": "autodocblocker",
     "displayName": "autodocblocker",
     "description": "Auto generated docblocks using regex. Multiple languages supported.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "publisher": "maddog986",
     "author": {
         "name": "Drew Gauderman"
-    },
+	},
+	"icon": "images/autodocblocker.png",
     "license": "GPL-3.0-or-later",
     "repository": {
         "type": "git",
@@ -20,17 +21,19 @@
         "vscode": "^1.28.2"
     },
     "categories": [
-        "Other"
+        "Other",
+        "Programming Languages",
+        "Formatters"
     ],
     "keywords": [
         "document",
         "doc",
-		"autodocblocker",
-		"docblock",
+        "autodocblocker",
+        "docblock",
         "comment"
     ],
     "activationEvents": [
-        "onCommand:extension.autodocblocker"
+        "*"
     ],
     "main": "./src/extension",
     "contributes": {
@@ -49,7 +52,10 @@
         ]
     },
     "scripts": {
-        "postinstall": "node ./node_modules/vscode/bin/install"
+        "postinstall": "node ./node_modules/vscode/bin/install",
+        "release": "vsce publish",
+        "minor": "vsce publish minor",
+        "package": "vsce package"
     },
     "devDependencies": {
         "typescript": "^2.6.1",

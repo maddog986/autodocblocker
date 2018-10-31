@@ -1,5 +1,7 @@
 # autodocblocker
 
+![Logo Image](https://raw.githubusercontent.com/maddog986/autodocblocker/master/images/autodocblocker.png)
+
 Simply provides an easy to use docblock generator with mininal amount of effort. Mainly tested with javascript and php. Very eary in development.
 
 Install at [Visuak Studio Code Marketplace](https://marketplace.visualstudio.com/items?itemName=maddog986.autodocblocker) or download the .vsix file and [install manually](https://code.visualstudio.com/docs/editor/extension-gallery#_install-from-a-vsix).

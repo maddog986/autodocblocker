@@ -50,8 +50,4 @@ I would love to add autocomplete supported DocBlick tags and better code detecti
 
 ## Release Notes
 
-v1.0.0 - First release.
-
-### 1.0.0
-
-Initial release of autodocblocker.
+[See Changelog](changelog.md)

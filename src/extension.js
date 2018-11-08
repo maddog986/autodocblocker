@@ -1,5 +1,5 @@
 /**
- * Program description.
+ * autodocblocker
  * Copyright (C) 2018. Drew Gauderman
 
  * This program is free software: you can redistribute it and/or modify
@@ -103,7 +103,7 @@ function isObject(value) {
  */
 function isInt(value) {
 	return value % 1 === 0;
- }
+}
 
 /**
  * get_data_type
@@ -115,7 +115,7 @@ function isInt(value) {
  * @global
  * @return	{string}
  */
-function get_data_type(value) {
+function get_data_type(value, type) {
 	if (!value || value == 'null') return 'mixed';
 
 	if (isArray(value)) return 'array';
@@ -124,11 +124,11 @@ function get_data_type(value) {
 	if (isObject(value)) return 'object';
 
 	//looking for string
-	if ((value.slice(-1) == "'" && value.slice(0,1) == "'") || (value.slice(-1) == '"' && value.slice(0,1) == '"')) {
+	if ((value.slice(-1) == "'" && value.slice(0, 1) == "'") || (value.slice(-1) == '"' && value.slice(0, 1) == '"')) {
 		return 'string';
 	}
 
-	return 'mixed'; //we dont know
+	return (type) ? type : 'mixed'; //we dont know, must be a custom data type.
 }
 
 /**
@@ -179,7 +179,7 @@ function getData(config, text, tempdata = {}, templateStr = '') {
 			data: tempdata,
 			str: templateStr
 		}
-	} catch(error) {
+	} catch (error) {
 		console.log('getData error:', error)
 	}
 }
@@ -196,32 +196,32 @@ exports.activate = (context) => {
 	//console logging
 	console.log('Extension "autodocblocker" is now active.');
 
-/*
-TODO: make an auto complete
+	/*
+	TODO: make an auto complete
 
-	context.subscriptions.push(vscode.languages.registerCompletionItemProvider(
-        ['php','javascript'],
-        {
-            provideCompletionItems: (document, position) => {
-				const line = document.lineAt(position).text;
-				const prefix = line.slice(0, position.character);
+		context.subscriptions.push(vscode.languages.registerCompletionItemProvider(
+	        ['php','javascript'],
+	        {
+	            provideCompletionItems: (document, position) => {
+					const line = document.lineAt(position).text;
+					const prefix = line.slice(0, position.character);
 
-				console.log('line:', line)
-				console.log('prefix:', prefix)
+					console.log('line:', line)
+					console.log('prefix:', prefix)
 
-				if (!prefix.includes('@')) return [];
+					if (!prefix.includes('@')) return [];
 
-				return []];
+					return []];
 
-                return;
-            }
-        },
-		['@']));
-*/
+	                return;
+	            }
+	        },
+			['@']));
+	*/
 
 	// The command has been defined in the package.json file
 	context.subscriptions.push(vscode.commands.registerCommand('extension.autodocblocker', async () => {
-		try {//error catch everything
+		try { //error catch everything
 
 			//basic stuff used if no package.json file exists in workspace folders
 			let json_package = {
@@ -278,7 +278,7 @@ TODO: make an auto complete
 				//console.log('started in middle of comment block')
 
 				startLine--
-			//single line comment
+				//single line comment
 			} else if (editor.document.lineAt(startedOnLine - 1).text.trim().substring(0, 2) == "//") {
 				//console.log('started on comment line')
 
@@ -286,9 +286,9 @@ TODO: make an auto complete
 				endLine--
 
 				Object.assign(data, {
-					descriptions: [
-						{text: editor.document.lineAt(startLine).text.trim().substring(2)}
-					]
+					descriptions: [{
+						text: editor.document.lineAt(startLine).text.trim().substring(2)
+					}]
 				})
 			}
 
@@ -336,9 +336,9 @@ TODO: make an auto complete
 				autoescape: false
 			});
 
-			env.addFilter('get_data_type', function (value) {
+			env.addFilter('get_data_type', function (value, type) {
 				//console.log('get_data_type', value)
-				return get_data_type(value);
+				return get_data_type(value, type);
 			})
 			env.addFilter('date_format', function (value, format) {
 				//console.log('date_format', value, format)
@@ -352,11 +352,11 @@ TODO: make an auto complete
 
 			let compiled = getData(configuration.checkers, lineText, data)
 
-			//console.log('compiled.data', compiled.data)
+			console.log('compiled.data before function', compiled.data)
 			//console.log('compiled.str', compiled.str)
 
 			//i feel like this is hacky, but it works
-			if (compiled.data.functions) {
+			if (compiled.data.functions && compiled.data.functions[0] && !compiled.data.functions[0].returns) {
 				let openBrackets = 0;
 				let checkLine = startLine;
 
@@ -369,15 +369,10 @@ TODO: make an auto complete
 
 					const line = editor.document.lineAt(checkLine).text;
 
-					//console.log('line', line)
+					console.log('line', line)
 
 					if (line.includes("{")) {
 						openBrackets++
-					}
-
-					if (line.includes("}")) {
-						openBrackets--
-						if (openBrackets == 0) break; //out of the function now
 					}
 
 					if (openBrackets == 1 && line.includes("return")) {
@@ -388,10 +383,15 @@ TODO: make an auto complete
 
 						//save return info
 						Object.assign(compiled.data.functions[0], {
-							returns: returnStr.group('returns')
+							returns_loop: returnStr.group('returns')
 						})
 
 						break;
+					}
+
+					if (line.includes("}")) {
+						openBrackets--
+						if (openBrackets <= 0) break; //out of the function now
 					}
 
 					checkLine++
@@ -417,7 +417,7 @@ TODO: make an auto complete
 				});
 			}
 
-			editor.insertSnippet(new vscode.SnippetString(docblock.replace(/^/gm, indentSpace).replace(/\$/g,'\\\$') + "\n"), new vscode.Position(startLine, 0));
+			editor.insertSnippet(new vscode.SnippetString(docblock.replace(/^/gm, indentSpace).replace(/\$/g, '\\\$') + "\n"), new vscode.Position(startLine, 0));
 		} catch (error) {
 			console.log('docblocker ERROR!', error)
 			vscode.window.showInformationMessage('docblocker ERROR!' + error);
@@ -441,12 +441,7 @@ exports.deactivate = () => {
 to package up: vsce package
 
 stuff that may help later:
-
 finds the correct comma:
 (?=([^\"\[\]]*\[[^\"\[\]]*\])*[^\"\[\]]*$)(,|$)
 $test2, $wtf2=123.345, String test2 = 'test2', $test3, $test4='bla', $test5, $test6, {test:'test2'}, ['test','test'], $test7 = 'bla2 ', $test8 = ['test','test2'], $test9='new Array'
-
-Arguments tested with, https://regex101.com/r/CTPQd2/4, php tested
-Notes: it does not support nested arrays or objects.
-String $test1234 = '', $test222 = ['test','test2'], $test4443, $test44567 = 3, $test44='1', $test55, $test1, $test2='123.345', $test3 = "test2", $test4=['test','test2'],$test5, $test6454=123.345, String $test6 = 'test2', $test7, $test8='bla', $test9, $test10, $test13 = 'bla2 ', $test14 = ['141','142'], $test15='new Array("test")', test
 */

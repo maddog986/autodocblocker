@@ -2,7 +2,7 @@
     "name": "autodocblocker",
     "displayName": "autodocblocker",
     "description": "Auto generated docblocks using regex. Multiple languages supported.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "publisher": "maddog986",
     "author": {
         "name": "Drew Gauderman"

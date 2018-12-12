@@ -4,6 +4,18 @@ All notable changes to the "autodocblocker" extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1]
+- Added addtional language support.
+- BREAKING CHANGE: Changed autodocblock.js formats and added languages table. If you have a custom autodocblock.js you will need to update!
+	- You can now specify different formatting options for individual langauges.
+	- Changed regex and templates for params a little to support addtional language types.
+	- You can not change the return type regex to customize the function return check.
+	- Renamed field 'scope' to 'modifier'.
+- Fixed a bug when starting with first or last line of the document.
+- Fixed only grabbing one line comment when building a new docblock.
+- autodocblocker.author setting now sets the author user. Overrides the package.json author.
+- Bunch of other stuff (forgot to make notes, sorry).
+
 ## [1.1.1]
 - Added a rudimentary function @return detection. Tested with php and javascript.
 

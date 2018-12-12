@@ -116,7 +116,7 @@ function isInt(value) {
  * @return	{string}
  */
 function get_data_type(value, type) {
-	if (!value || value == 'null') return 'mixed';
+	if (!value || value == 'null') return type ? type : 'mixed';
 
 	if (isArray(value)) return 'array';
 	if (isBoolean(value)) return 'boolean';
@@ -128,7 +128,7 @@ function get_data_type(value, type) {
 		return 'string';
 	}
 
-	return (type) ? type : 'mixed'; //we dont know, must be a custom data type.
+	return (type ? type : 'mixed'); //we dont know, must be a custom data type.
 }
 
 /**
@@ -146,30 +146,34 @@ function getData(config, text, tempdata = {}, templateStr = '') {
 		for (var element of config) {
 			let m
 
-			while ((m = element.regex.exec(text)) !== null) {
-				// This is necessary to avoid infinite loops with zero-width matches
-				if (m.index === element.regex.lastIndex) {
-					element.regex.lastIndex++
-				}
+			for (var rege of (Array.isArray(element.regex) ? element.regex : [element.regex])) {
+				//console.log('rege', rege)
 
-				if (!tempdata[element.name]) {
-					tempdata[element.name] = []
-				}
+				while ((m = rege.exec(text.trim())) !== null) {
+					// This is necessary to avoid infinite loops with zero-width matches
+					if (m.index === rege.lastIndex) {
+						rege.lastIndex++
+					}
 
-				var groups = m.groups();
+					if (!tempdata[element.name]) {
+						tempdata[element.name] = []
+					}
 
-				tempdata[element.name].push(groups)
+					var groups = m.groups();
 
-				if (!element.template) continue
+					tempdata[element.name].push(groups)
 
-				for (var line of element.template) {
-					var el = tempdata[element.name]
+					if (!element.template) continue
 
-					if (typeof line == 'object') {
-						if (!groups[line.against]) continue;
-						Object.assign(el[el.length - 1], getData([line], groups[line.against]).data)
-					} else if (el.length == 1) {
-						templateStr += line + "\n";
+					for (var line of element.template) {
+						var el = tempdata[element.name]
+
+						if (typeof line == 'object') {
+							if (!groups[line.against]) continue;
+							Object.assign(el[el.length - 1], getData([line], groups[line.against]).data)
+						} else if (el.length == 1) {
+							templateStr += line + "\n";
+						}
 					}
 				}
 			}
@@ -222,7 +226,6 @@ exports.activate = (context) => {
 	// The command has been defined in the package.json file
 	context.subscriptions.push(vscode.commands.registerCommand('extension.autodocblocker', async () => {
 		try { //error catch everything
-
 			//basic stuff used if no package.json file exists in workspace folders
 			let json_package = {
 				version: '0.0.1',
@@ -233,109 +236,35 @@ exports.activate = (context) => {
 
 			let workspacePath = '';
 
-			//find package.json file to include into template vars
-			for (var folder of vscode.workspace.workspaceFolders) {
-				if (fs.existsSync(folder.uri.fsPath + "\\package.json")) {
-					json_package = JSON.parse(fs.readFileSync(folder.uri.fsPath + '\\package.json', 'utf8'));
+			if (vscode.workspace.workspaceFolders) {
+				//find package.json file to include into template vars
+				for (var folder of vscode.workspace.workspaceFolders) {
+					if (fs.existsSync(folder.uri.fsPath + "\\package.json")) {
+						json_package = JSON.parse(fs.readFileSync(folder.uri.fsPath + '\\package.json', 'utf8'));
 
-					workspacePath = folder.uri.fsPath
-					break
-				}
-			}
-
-			//find custom .autodocblocker.js file
-			for (var folder of vscode.workspace.workspaceFolders) {
-				if (fs.existsSync(folder.uri.fsPath + "\\.autodocblocker.js")) {
-					try {
-						eval(fs.readFileSync(folder.uri.fsPath + '\\.autodocblocker.js', 'utf8'));
-					} catch (error) {
-						console.log(".autodocblocker.js load ERROR!\n", error)
-						vscode.window.showInformationMessage('.autodocblocker.js load ERROR!');
+						workspacePath = folder.uri.fsPath
+						break
 					}
-					break
+				}
+
+				//find custom .autodocblocker.js file
+				for (var folder of vscode.workspace.workspaceFolders) {
+					if (fs.existsSync(folder.uri.fsPath + "\\.autodocblocker.js")) {
+						try {
+							eval(fs.readFileSync(folder.uri.fsPath + '\\.autodocblocker.js', 'utf8'));
+						} catch (error) {
+							console.log(".autodocblocker.js load ERROR!\n", error)
+							vscode.window.showInformationMessage('.autodocblocker.js load ERROR!');
+						}
+						break
+					}
 				}
 			}
-
-			const editor = vscode.window.activeTextEditor
-			const selection = editor.selection
-			const startedOnLine = selection.active.line
-
-			let startLine = startedOnLine;
-			let endLine = startLine
-
-			let data = {
-				now: new Date(),
-				version: json_package.version,
-				started_within_block: (editor.document.lineAt(startLine).text.trim()[0] == "*") ? true : false,
-				...json_package //apply the json config file
-			};
-			//console.log('data', data)
-
-			//console.log('Started On lineText:', editor.document.lineAt(startedOnLine).text.trim())
-
-			//check for previous docblock
-			if (editor.document.lineAt(startedOnLine - 1).text.trim()[0] == "*") {
-				//console.log('started in middle of comment block')
-
-				startLine--
-				//single line comment
-			} else if (editor.document.lineAt(startedOnLine - 1).text.trim().substring(0, 2) == "//") {
-				//console.log('started on comment line')
-
-				startLine--
-				endLine--
-
-				Object.assign(data, {
-					descriptions: [{
-						text: editor.document.lineAt(startLine).text.trim().substring(2)
-					}]
-				})
-			}
-
-			//if starting on the first line, add to end line
-			if (editor.document.lineAt(endLine).text.trim().substring(0, 3) == "/**" || editor.document.lineAt(endLine).text.trim().substring(0, 2) == "//")
-				endLine++
-
-			//start loop to check for beginning of docblock
-			while (editor.document.lineAt(startLine).text.trim()[0] == "*") {
-				//console.log('searching for beginning of comment block')
-				startLine--
-			}
-
-			//start loop to check for end of docblock
-			while (editor.document.lineAt(endLine).text.trim()[0] == "*") {
-				//console.log('searching for ending of comment block')
-				endLine++
-			}
-
-			if (startedOnLine != startLine) {
-				var docblockRange = new vscode.Range(startLine, 0, endLine, 0);
-				//console.log('docblockRange Text', editor.document.getText(docblockRange))
-
-				//saved parsed information
-				Object.assign(data, getData(configuration.params, editor.document.getText(docblockRange), {}).data)
-				//console.log('block data', data)
-			}
-
-			//console.log('startLine finished', editor.document.lineAt(startLine).text)
-			//console.log('endline finished', editor.document.lineAt(endLine).text)
-
-			const lineText = editor.document.lineAt(endLine).text;
-			//console.log('lineText', lineText)
-
-			const indentSpace = (new RegExp(/^(\s+)/).test(lineText)) ? RegExp.$1 : '';
-			//console.log('indentSpace', indentSpace)
-
-			//save indent spaces
-			Object.assign(data, {
-				spaces: indentSpace.length
-			})
 
 			//startup nunjucks
 			const env = nunjucks.configure(workspacePath, {
 				autoescape: false
 			});
-
 			env.addFilter('get_data_type', function (value, type) {
 				//console.log('get_data_type', value)
 				return get_data_type(value, type);
@@ -350,77 +279,141 @@ exports.activate = (context) => {
 				return (length - value.length > 0) ? value + " ".repeat(length - value.length) : value
 			})
 
-			let compiled = getData(configuration.checkers, lineText, data)
+			const editor = vscode.window.activeTextEditor
+			const document = editor.document
+			const selection = editor.selection
+			const startedOnLine = selection.active.line
+			const languageId = document.languageId
 
-			console.log('compiled.data before function', compiled.data)
-			//console.log('compiled.str', compiled.str)
+			let startLine = startedOnLine;
+			let endLine = startLine
 
-			//i feel like this is hacky, but it works
-			if (compiled.data.functions && compiled.data.functions[0] && !compiled.data.functions[0].returns) {
-				let openBrackets = 0;
-				let checkLine = startLine;
+			let data = {
+				now: new Date(),
+				version: json_package.version,
+				started_within_block: (document.lineAt(startLine).text.trim()[0] == "*") ? true : false,
+				...json_package //apply the json config file
+			};
+
+			//set author override
+			if (vscode.workspace.getConfiguration('autodocblocker').get('author')) {
+				data.author.name = vscode.workspace.getConfiguration('autodocblocker').get('author')
+			}
+
+			//console.log('data', data)
+			//console.log('Started On lineText:', document.lineAt(startedOnLine).text.trim())
+
+			//check for language configuration
+			for (var lang of configuration.languages) {
+				if (lang.language.split(';').includes(languageId)) {
+					Object.assign(data, lang)
+					Object.assign(data, { languageId: languageId })
+					break
+				}
+			}
+
+			//language configuration was never set, so i guess it doesnt exist
+			if (!data.languageId) {
+				vscode.window.showInformationMessage('autodocblocker: This langauge is not supported: ' + languageId);
+				return
+			}
+
+			const getLine = function (num) {
+				return document.lineAt(num).text
+			}
+
+			const escapeRegExp = function (string) {
+				return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+			}
+
+			const single_line = data.single_line.trim()
+			const block_start = data.block_start.trim()
+			const block_end = data.block_end.trim()
+			const block_line = data.block_line.trim()
+
+			//const prevLineText = getLine(selection.active.line - 1).trim()
+
+			let commentLineStart = selection.active.line - 1
+
+			while (commentLineStart > 0 && (getLine(commentLineStart).trim().substring(0, single_line.length) == single_line || (block_end.length > 0 && getLine(commentLineStart).trim().substring(0, block_end.length) == block_end) || getLine(commentLineStart).trim().substring(0, block_line.length) == block_line || getLine(commentLineStart).trim().substring(0, block_start.length) == block_start)) {
+				commentLineStart--
+			}
+
+			let commentLineEnd = commentLineStart + 1
+
+			while (commentLineEnd <= document.lineCount && (getLine(commentLineEnd).trim().substring(0, single_line.length) == single_line || (block_end.length > 0 && getLine(commentLineEnd).trim().substring(0, block_end.length) == block_end) || getLine(commentLineEnd).trim().substring(0, block_line.length) == block_line || getLine(commentLineEnd).trim().substring(0, block_start.length) == block_start)) {
+				commentLineEnd++
+			}
+
+			const cRange = new vscode.Range(commentLineStart + 1, 0, commentLineEnd, 0)
+			//console.log('range', document.getText(cRange))
+
+			const paramData = getData(configuration.params, document.getText(cRange), {}).data
+			//console.log('paramData', paramData)
+
+			//saved parsed information
+			Object.assign(data, paramData)
+
+			const onLineText = getLine(commentLineEnd)
+			const compiled = getData(configuration.checkers, onLineText, data)
+			//console.log('compiled:', compiled)
+
+			//try and figure out the return value of a function
+			if (compiled.data.functions && compiled.data.functions[0] && !compiled.data.functions[0].returns && data.function_start && data.function_end && data.function_return) {
+				let openBrackets = 0
+				let nextLine = commentLineEnd
 
 				//start loop to check for end of docblock
-				while (true) {
-					if (!editor.document.lineAt(checkLine)) {
-						console.log("EOF?")
-						break;
-					}
+				while (openBrackets >= 0 && document.lineCount > nextLine) {
+					const line = document.lineAt(nextLine).text;
 
-					const line = editor.document.lineAt(checkLine).text;
-
-					console.log('line', line)
-
-					if (line.includes("{")) {
+					if (data.function_start.exec(line)) {
 						openBrackets++
 					}
 
-					if (openBrackets == 1 && line.includes("return")) {
-						const returnStr = namedRegexp(/[\s]?(?:return\s)(:<returns>([^;]*))/g).exec(line);
-						console.log('returnStr', returnStr)
+					if (openBrackets == 1) {
+						//console.log('line', line)
 
-						if (!returnStr) break; //found return, but it was blank
+						let matches = data.function_return.exec(line)
 
-						//save return info
-						Object.assign(compiled.data.functions[0], {
-							returns_loop: returnStr.group('returns')
-						})
-
-						break;
+						if (matches) {
+							//save return info
+							Object.assign(compiled.data.functions[0], matches.groups())
+							break;
+						}
 					}
 
-					if (line.includes("}")) {
+					if (data.function_end.exec(line)) {
 						openBrackets--
-						if (openBrackets <= 0) break; //out of the function now
+						if (openBrackets == 0) { break; }
 					}
 
-					checkLine++
+					nextLine++
 				}
-				//console.log('returns:', getData(configuration.checkers, test, {}))
 			}
 
-			console.log('compiled.data', compiled.data)
+			const indentSpace = (new RegExp(/^(\s+)/).test(onLineText)) ? RegExp.$1 : '';
+			//console.log('indentSpace', indentSpace)
+
+			//save indent spaces
+			Object.assign(data, {
+				spaces: indentSpace.length
+			})
+			console.log('data', data)
 
 			//render the new code
-			const docblock = env.renderString(compiled.str, compiled.data);
-			//console.log('docblock', docblock)
+			const docblock = env.renderString(compiled.str, compiled.data)
+			//console.log('docblock:', docblock)
 
-			if (!docblock || docblock == '') {
-				//console.log('docblock empty, exited. compiled data:', compiled)
-				return //nothing could be generated
-			}
+			//replace or add the docblock
+			editor.edit(function (edit) {
+				edit.replace(cRange, docblock.trim().replace(/^/gm, indentSpace) + "\n");
+			});
 
-			//remove the old code
-			if (docblockRange) {
-				editor.edit(function (edit) {
-					edit.replace(docblockRange, '');
-				});
-			}
-
-			editor.insertSnippet(new vscode.SnippetString(docblock.replace(/^/gm, indentSpace).replace(/\$/g, '\\\$') + "\n"), new vscode.Position(startLine, 0));
+			//editor.insertSnippet(new vscode.SnippetString(docblock.trim().replace(/^/gm, indentSpace).replace(/\$/g, '\\\$') + "\n"), new vscode.Position(startLine, 0));
 		} catch (error) {
-			console.log('docblocker ERROR!', error)
-			vscode.window.showInformationMessage('docblocker ERROR!' + error);
+			console.log('autodocblocker ERROR!', error)
+			vscode.window.showInformationMessage('autodocblocker ERROR!' + error);
 		}
 	}));
 }
@@ -444,4 +437,9 @@ stuff that may help later:
 finds the correct comma:
 (?=([^\"\[\]]*\[[^\"\[\]]*\])*[^\"\[\]]*$)(,|$)
 $test2, $wtf2=123.345, String test2 = 'test2', $test3, $test4='bla', $test5, $test6, {test:'test2'}, ['test','test'], $test7 = 'bla2 ', $test8 = ['test','test2'], $test9='new Array'
+
+
+//^(?:(?<scope>\w+)\s)?(:(?<testname>[\w:.]+)?[\s=]+?)?(?:(?<type>function|void)\s?)(?<name>[\w:.]+)?\(\s?(?<args_full>.*)\s+?\)(?:[\s:]+(?<returns>[\w]+))?$
+
+//(?:^|,\s?)(?:(?<type>[\w]+)\s)?(?<name>[$&\w.]+)?\s?(?<seperator>=)\s?(?<value>'[\w.]+'|[\d.]+|[&$\w.]+|{[^{}]*}|'[^']*'|"[^"]*"|\[[^\[\]]*\])?
 */

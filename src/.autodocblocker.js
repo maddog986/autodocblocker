@@ -24,19 +24,19 @@ const author = [
 	'{%- if (author.name|trim) == (auth.name|trim) %}',
 	'{%- set add_author = false %}',
 	'{%- endif %}',
-	' * @author	{{ auth.name|trim }}',
+	'{{block_line}} @author	{{ auth.name|trim }}',
 	'{%- endfor %}',
 	'{%- if add_author == true %}',
-	' * @author	{{author.name|trim}}',
+	'{{block_line}} @author	{{author.name|trim}}',
 	'{%- endif %}',
 ]
 
 //since tag group
 const since = [
 	'{%- if since %}',
-	' * @since	v{{ since | join("", "version") | trim }}',
+	'{{block_line}} @since	v{{ since | join("", "version") | trim }}',
 	'{%- else %}',
-	' * @since	v{{version}}',
+	'{{block_line}} @since	v{{version}}',
 	'{%- endif %}',
 ];
 
@@ -49,233 +49,274 @@ const version = [
 	'{%- set major = version.major %}',
 	'{%- set minor = version.minor %}',
 	'{%- set patch = version.patch %}',
-	' * @version	v{{major}}.{{minor}}.{{patch}}	{{ version.date|trim }}.\t{{ version.description | default("") | trim }}',
+	'{{block_line}} @version	v{{major}}.{{minor}}.{{patch}}	{{ version.date|trim }}.\t{{ version.description | default("") | trim }}',
 	'{%- endfor %}',
 	'{%- if not started_within_block %}',
-	' * @version	v{{major}}.{{minor}}.{{(patch|int)+1}}	{{ now | date_format("dddd, mmmm dS, yyyy") }}.',
+	'{{block_line}} @version	v{{major}}.{{minor}}.{{(patch|int)+1}}	{{ now | date_format("dddd, mmmm dS, yyyy") }}.',
 	'{%- endif %}'
 ]
 
 //global tag group
 const global = [
 	'{%- if spaces == 0 %}',
-	' * @global',
+	'{{block_line}} @global',
 	'{%- endif %}',
 ]
 
 //description tag group
 const description = [
 	'{%- for description in descriptions %}',
-	' * {{ description.text | trim }}',
+	'{{block_line}} {{ description.text | trim }}',
 	'{%- endfor %}',
-	' *'
+	'{{block_line}}'
 ]
 
-//todo tag group
 const todo = [
 	'{%- for todo in todos %}',
-	' * @todo	{{todo.text|trim}}',
+	'{{block_line}} @todo	{{todo.text|trim}}',
 	'{%- endfor %}',
 ]
 
+//https://regex101.com/r/m6NqCf/13
+const reg_vars_args = namedRegexp(/(?!$)(?:(:<declaration>const|let|var|local|static|protected|private|return)\s)?(?:(:<type>[\w*]+|[\w]+[.]{3})\s)?(:<name>[^{\[\(\s'"][$&.\w\-\>\(\)\['"\]]+)?(:<seperator>\s=\s)?(:<value>[\d.]+|\[[^\[\]]*(?:\]|$)|{[^{}]*(?:}|$)|'[^']*(?:'|$)|"[^"]*(?:"|$)|[&$\w][\w \t.{}()='"\[\],;:]+)?(?:,\s?|;\n?|$)/gi)
+
+//https://regex101.com/r/o1qngQ/8
+const reg_functions = namedRegexp(/^([\s]+)?(?:(:<modifier>(?:local|protected|private|public|const|static|\s)+)\s)?(?:(:<function>[$\w.:*]+)\s)(?:(:<name>[$\w.:]+))\((:<args_full>.*)\)/gi)
+
+//https://regex101.com/r/AdapjC/2
+const reg_assign_functions = namedRegexp(/^([\s]+)?(?:(:<name>[$\w.:]+))\s?(:<seperator>=)\s?(?:(:<function>[$\w.:*]+))\((:<args_full>.*)\)/gi)
+
+//https://regex101.com/r/bcrDWk/1
+const reg_classes = namedRegexp(/(?:^|\t|\s)(?:(:<return>return)?\s?new )?class\s?(?:(:<name>[\w:.]+)?(?:\((:<args_full>.*)\))?)?(?:\s?extends\s(:<extends>\w+))?(?:\s?implements\s(:<implements>\w+))?/gi)
 
 //stuff to expose
 module.exports = {
+	languages: [
+		{
+			language: "al;c;cpp;csharp;dart;flax;fsharp;go;haxe;java;javascript;javascriptreact;typescript;typescriptreact;jsonc;kotlin;less;pascal;objectpascal;php;rust;scala;scss;stylus;swift;verilog;vue",
+			block_start: '/**', //start of comment block
+			block_line: ' *', //line of commment block
+			block_end: ' */', //end of comment block
+			single_line: '//', //single line of comments
+			function_start: /{/, //start of function check
+			function_end: /}/, //end of function check
+			function_return: namedRegexp(/\s?(?:return\s)(:<returns>[$&\w.\->'"(){}\[\]]+)/gi) //regex to get return info
+		}, { //sorta based on https://stevedonovan.github.io/ldoc/manual/doc.md.html
+			language: "lua",
+			block_start: '------------', //start of comment block
+			block_line: '--', //line of commment block
+			block_end: '', //end of comment block
+			single_line: '--', //single line of comments
+			function_start: /(\bfunction|\bthen)/gi, //start of function check
+			function_end: /\bend/gi, //end of function check
+			function_return: namedRegexp(/\s?(?:return\s)(:<returns>[$&\w.\->'"(){}\[\]]+)/gi) //regex to get return info
+		}
+	],
+
 	//existing params to check for when updating existing docblock
-	params: [{
-		name: 'versions',
-		regex: namedRegexp(/^[ \t\/*@]*version[\t\s]+v(:<major>\d+)\.(:<minor>\d+)\.(:<patch>\d+)[\t\s]+(:<date>[\w\s,]+)\.(:<description>.+)?$/gmi)
-	}, {
-		name: 'authors',
-		regex: namedRegexp(/^[ \t\/*@]*author[\t\s]+(:<name>.*)$/gmi)
-	}, {
-		name: 'since',
-		regex: namedRegexp(/^[ \t\/*@]*since[\t\s]+v(:<version>[\w.]+)/gm)
-	}, {
-		name: 'descriptions',
-		regex: namedRegexp(/^[\t\s]+\* (:<text>[^@].+)$/gmi)
-	}, {
-		name: 'todos',
-		regex: namedRegexp(/^[ \t\/*@]*todo[\t\s]+(:<text>.*)$/gmi)
-	}, {
-		name: 'returns',
-		regex: namedRegexp(/^[ \t\/*@]*return[\t\s]+(:<text>.*)$/g)
-	}, {
-		name: 'previous_vars',
-		regex: namedRegexp(/^[ \t\/*@]*var[\t\s]+(:<type>\w+)[\t\s]+(:<name>[$&.\->\w]+)(?:$|(?:[\t\s]+(:<description>.*)))/gm)
-	}, {
-		name: 'previous_params',
-		regex: namedRegexp(/^[ \t\/*@]*param[\t\s]+(:<type>\w+)[\t\s]+(:<name>[$&.\->\w]+)(?:$|(?:[\t\s]+(:<description>.*)))/gm)
-	}],
+	params: [
+		{
+			name: 'versions',
+			regex: namedRegexp(/@version\s+v(:<major>\d+)\.(:<minor>\d+)\.(:<patch>\d+)\s+(:<date>[\w\s,]+)\.(:<description>.+)?$/gmi)
+		}, {
+			name: 'authors',
+			regex: namedRegexp(/@author\s+(:<name>.*)$/gmi)
+		}, {
+			name: 'since',
+			regex: namedRegexp(/@since\s+v(:<version>[\w.]+)/gm)
+		}, {
+			name: 'descriptions',
+			regex: namedRegexp(/^[/*\-#\s]+(:<text>[^@/\n\-#*\s].*)$/gmi)
+		}, {
+			name: 'todos',
+			regex: namedRegexp(/@todo\s+(:<text>.*)$/gmi)
+		}, {
+			name: 'returns',
+			regex: namedRegexp(/@return\s+(:<text>.*)$/g)
+		}, {
+			name: 'previous_vars',
+			regex: namedRegexp(/^[\s*\/\-#]+@var\s+(:<type>\w+)\s+(:<name>[$&.\->\w]+)(?:[ \t]+)?(:<description>.*)$/gm)
+		}, {
+			name: 'previous_params',
+			regex: namedRegexp(/^[\s*\/\-#]+@param\s+(:<type>\w+)\s+(:<name>[$&.\->\w]+)(?:[ \t]+)?(:<description>.*)$/gm)
+		}
+	],
 
 	//what to look out for when checking the code, and the template to use to spit back out
-	checkers: [{
-		name: 'classes',
-		regex: namedRegexp(/(?:^|\t|\s)(?:(:<return>return)?\s?new )?class\s?(?:(:<name>\w+)?(?:\((:<args_full>.*)\)))?(?:\s?extends\s(:<extends>\w+))?/gi),
-		//v1.0.0: regex: namedRegexp(/(?:^|\t|\s)(?:(?:return )?new )?class\s?(:<name>\w+)?(?:[\(](:<args_full>[\$\-\>.\s\w,\[\]'"]+)[\)])?(?:\sextends\s(:<extends>\w+))?/gi),
-		template: [{
-				name: 'args',
-				against: 'args_full',
-				regex: namedRegexp(/(?:^|,\s+)(?:(:<type>\w+)\s)?(:<name>[$\->\w]+)?\s?(:<seperator>=)?\s?(:<value>[$\w]+|[\d.]+|[{][^{}]*[}]|['][^']*[']|["][^"]*["]|[\[][^\[\]]*[\]])?/g)
-				///v1.0.0: regex: namedRegexp(/(?:^|,\s+)(?:(:<type>\w+)\s)?(:<name>[$\->\w]+)?\s?(:<seperator>=)?\s?(:<value>[$\w]+|[\d.]+|[{][^{}]*[}]|['][^']*[']|["][^"]*["]|[\[][^\[\]]*[\]])?/g)
-			},
-			'{%- for class in classes -%}',
-			'/**',
+	checkers: [
+		{
+			name: 'functions',
+			regex: [reg_functions, reg_assign_functions],
+			/*
+			Tested with (mix of php, javascript, lua, ino):
+				Receive = function( len, ply )
+				function ENT:StartTouch( ent )
+				const char* wifi_pkt_type2str(wifi_promiscuous_pkt_type_t type, wifi_mgmt_subtypes_t subtype) {
+				Receive = function( len, ply )
+				local function Extract_SBPlanetName( value, planet )
+				function hook.Call( name, GM, ... )
+				Receive = function( len, ply )
+				function Receive( len, ply )
+				function test()
+				$var = function(test, test2) {
+				void wifi_sniffer_packet_handler(void* buff, wifi_promiscuous_pkt_type_t type) {
+			*/
+			//v1.0.1: namedRegexp(/(?:(:<modifier>\w+)\s)?(?:(:<type>function|void|)\s)(:<name>[\w:.]+)\((:<args_full>.*)\)(?:[\s:]+(:<returns>[\w]+))?/gi),
+			//v1.0.0: regex: namedRegexp(/(?:(:<modifier>\w+)\s)?[\s;]?function (:<name>.+)\((:<args_full>.+)?\)/gi),
+			template: [
+				{
+					name: 'args',
+					against: 'args_full',
+					regex: reg_vars_args
+				},
 
-			'{%- if descriptions %}',
-			...description,
-			'{%- else %}',
-			' * {{class.name | default("anonymouse class")}}{% if selected_text %}: {{selected_text|trim}}{% endif %}.',
-			' *',
-			'{%- endif %}',
+				'{%- for function in functions -%}',
+				'{{ block_start }}',
 
-			'{%- set add_author = true %}',
-			...author,
-			...since,
-			...version,
+				'{%- if descriptions %}',
+				...description,
+				'{%- else %}',
+				'{{block_line}} {{function.name | default(function.name2) }}{% if selected_text %}: {{selected_text|trim}}{% endif %}.',
+				'{{block_line}}',
+				'{%- endif %}',
 
-			'{%- if class.extends %}',
-			' * @see		{{class.extends}}',
-			'{%- endif %}',
+				'{%- set add_author = true %}',
+				...author,
+				...since,
+				...version,
 
-			'{%- for arg in class.args %}',
-			' * @param	{{ arg.value | get_data_type(arg.type) | lower }}{% for p in previous_params %}{% if p.description and (p.name|trim) == (arg.name|trim) %}\t{{ p.description | default("") | trim }}{% endif %}{% endfor %}',
-			'{%- endfor %}',
+				'{%- if function.modifier %}',
+				'{{block_line}} @access	{{function.modifier | trim}}',
+				'{%- endif %}',
 
-			...global,
-			...todo,
+				...global,
 
-			' */',
-			'{%- endfor -%}'
-		]
-	}, {
-		name: 'vars',
-		//https://regex101.com/r/9wQynL/1/
-		regex: namedRegexp(/(?:^|\t|\s|;)(?:(:<declaration>const|let|var)\s)?(?:(:<scope>public|private|static|protected)\s)?(?:(:<type>\w+?)\s)?(:<name>[\$\-\>\w\.]+)\s?(:<seperator>[=]+)?\s?(:<value>[$\[\]{}\d\w\s\.,'"\/:?]+)?(?:;|,|$)/gi),
-		template: [
-			'{%- if not functions and not classes and not copyright -%}',
-			'{%- for var in vars -%}',
-			'/**',
+				'{%- set max_type = 0 %}',
+				'{%- set max_name = 0 %}',
+				'{%- for arg in function.args %}',
+				'{%- set length = (arg.value | get_data_type(arg.type) | length) %}',
+				'{%- if (length > max_type) %}',
+				'{%- set max_type = length %}',
+				'{%- endif %}',
+				'{%- set length = (arg.name or arg.value) | length %}',
+				'{%- if (length > max_name) %}',
+				'{%- set max_name = length %}',
+				'{%- endif %}',
+				'{%- endfor -%}',
 
-			'{%- if descriptions %}',
-			...description,
-			'{%- else %}',
-			'{%- if selected_text %}',
-			' * {{selected_text}}',
-			' *',
-			'{%- endif %}',
-			'{%- endif %}',
+				'{%- for arg in function.args %}', //start args
+				'{%- set type = (arg.value | get_data_type(arg.type) | make_length(max_type) | lower ) %}',
+				'{%- set name = (arg.name or arg.value) | make_length(max_name)  %}',
+				'{%- set desc = "" %}',
 
-			'{%- set add_author = false %}',
-			...author,
+				'{%- if arg.seperator %}',
+				'{%- set desc = "Default: " + arg.value | trim %}',
+				'{%- endif %}',
 
-			'{%- if var.scope %}',
-			...since,
-			'{%- endif %}',
+				'{%- for p in previous_params %}',
+				'{%- if p.name == (name | trim) %}',
+				'{%- set desc = p.description %}',
+				'{%- endif %}',
+				'{%- endfor %}',
 
-			'{%- set name = var.name | trim %}',
-			'{%- for p in previous_vars %}',
-			'{%- if p.description and (p.name|trim) == name %}',
-			'{%- set name = name + "\t" + p.description %}',
-			'{%- endif %}',
-			'{%- endfor %}',
+				'{{block_line}} @param	{{ type }}\t{{ name }}\t{{ desc | default("") | trim }}',
+				'{%- endfor %}', //end args
 
-			' * @var		{{ var.value | get_data_type(var.type) | lower}}	{{name | trim}}',
+				'{%- set returns = "void" %}',
+				'{%- if function.returns %}', //looped through the code and found a return statement
+				'{%- set returns = function.returns | default("mixed") | get_data_type("mixed") %}',
+				'{%- endif %}',
+				'{{block_line}} @return	{{ returns }}',
 
-			'{%- if var.scope %}',
-			' * @access	{{var.scope}}',
-			'{%- endif %}',
+				...todo,
 
-			...global,
-			...todo,
+				'{{ block_end }}',
+				'{%- endfor -%}'
+			]
+		}, {
+			name: 'vars',
+			regex: reg_vars_args,
+			template: [
+				'{%- if not functions and not classes and not copyright -%}',
+				'{%- for var in vars -%}{%- if var.type != "return" -%}',
+				'{{ block_start }}',
 
-			' */',
-			'{%- endfor -%}',
-			'{%- endif -%}'
-		]
-	}, {
-		name: 'functions',
-		regex: namedRegexp(/(?:(:<scope>\w+)\s)?(?:(:<type>function)\s)(:<name>\w+)\((:<args_full>.*)\)(?:[\s:]+(:<returns>[\w]+))?/gi),
-		//v1.0.0: regex: namedRegexp(/(?:(:<scope>\w+)\s)?[\s;]?function (:<name>.+)\((:<args_full>.+)?\)/gi),
-		template: [{
-				name: 'args',
-				against: 'args_full',
-				regex: namedRegexp("(?:^|,\\s?)(?:(:<type>[\\w]+)[\\s])?(?:(:<name>[$\\w]+)?\\s?(:<seperator>=)\\s?)?(:<value>[&$\\w]+|[\\d.]+|\\{[^{}]*\\}|'[^']*'|\"[^\"]*\"|\\[[^\\[\\]]*\\])?", "g")
-				//v1.0.0: regex: namedRegexp(/(?:(:<type>\w+)\s)?(:<name>[$\w->]+)([\s=]+(:<value>[->\w\s.'":\[\]{}]+))?(?:,|$)/g)
-			},
-			'{%- for function in functions -%}',
-			'/**',
+				'{%- if descriptions %}',
+				...description,
+				'{%- else %}',
+				'{%- if selected_text %}',
+				'{{block_line}} {{selected_text}}.',
+				'{{block_line}}',
+				'{%- endif %}',
+				'{%- endif %}',
 
-			'{%- if descriptions %}',
-			...description,
-			'{%- else %}',
-			' * {{function.name}}{% if selected_text %}: {{selected_text|trim}}{% endif %}',
-			' *',
-			'{%- endif %}',
+				'{%- set add_author = false %}',
+				...author,
 
-			'{%- set add_author = true %}',
-			...author,
-			...since,
-			...version,
+				'{%- if var.modifier %}',
+				...since,
+				'{%- endif %}',
 
-			'{%- if function.scope %}',
-			' * @access	{{function.scope | trim}}',
-			'{%- endif %}',
+				'{%- set name = var.name | trim %}',
 
-			...global,
+				'{%- for p in previous_vars %}',
+				'{%- if p.description and (p.name|trim) == name %}',
+				'{%- set name = name + "\t" + p.description %}',
+				'{%- endif %}',
+				'{%- endfor %}',
 
-			'{%- set max_type = 0 %}',
-			'{%- set max_name = 0 %}',
-			'{%- for arg in function.args %}',
-			'{%- set length = (arg.value | get_data_type(arg.type) | length) %}',
-			'{%- if (length > max_type) %}',
-			'{%- set max_type = length %}',
-			'{%- endif %}',
-			'{%- set length = (arg.name or arg.value) | length %}',
-			'{%- if (length > max_name) %}',
-			'{%- set max_name = length %}',
-			'{%- endif %}',
-			'{%- endfor -%}',
+				'{{block_line}} @var		{{ var.value | get_data_type(var.type) | lower}}	{{name | trim}}',
 
-			'{%- for arg in function.args %}', //start args
-			'{%- set type = (arg.value | get_data_type(arg.type) | make_length(max_type) | lower ) %}',
-			'{%- set name = (arg.name or arg.value) | make_length(max_name)  %}',
-			'{%- set desc = "" %}',
+				'{%- if var.modifier %}',
+				'{{block_line}} @access	{{var.modifier}}',
+				'{%- endif %}',
 
-			'{%- if arg.seperator %}',
-			'{%- set desc = "Default: " + arg.value | trim %}',
-			'{%- endif %}',
+				...global,
+				...todo,
 
-			'{%- for p in previous_params %}',
-			'{%- if p.name == (name | trim) %}',
-			'{%- set desc = p.description %}',
-			'{%- endif %}',
-			'{%- endfor %}',
+				'{{ block_end }}',
+				'{%- endif -%}{%- endfor -%}',
+				'{%- endif -%}'
+			]
+		}, {
+			name: 'classes',
+			regex: reg_classes,
+			template: [
+				{
+					name: 'args',
+					against: 'args_full',
+					regex: reg_vars_args
+				},
 
-			' * @param	{{ type }}\t{{ name }}\t{{ desc | default("") | trim }}',
-			'{%- endfor %}', //end args
+				'{%- for class in classes -%}',
+				'{{ block_start }}',
 
-			'{%- for return in returns %}', //already specified
-			' * @return	{{return.text|trim}}',
-			'{%- endfor %}',
+				'{%- if descriptions %}',
+				...description,
+				'{%- else %}',
+				'{{block_line}} {{class.name | default("anonymouse class")}}{% if selected_text %}: {{selected_text|trim}}{% endif %}.',
+				'{{block_line}}',
+				'{%- endif %}',
 
-			'{%- if not returns %}',
-			'{%- set returns = "void" %}',
-			'{%- if function.returns_loop %}', //looped through the code and found a return statement
-			'{%- set returns = function.returns_loop | default("mixed") | get_data_type("mixed") %}',
-			'{%- endif %}',
+				'{%- set add_author = true %}',
+				...author,
+				...since,
+				...version,
 
-			'{%- if function.returns %}', //regex found a return object within the function statement
-			'{%- set returns = function.returns %}',
-			'{%- endif %}',
+				'{%- if class.extends %}',
+				'{{block_line}} @see		{{class.extends}}',
+				'{%- endif %}',
 
-			' * @return	{{ returns }}',
-			'{%- endif %}',
+				'{%- for arg in class.args %}',
+				'{{block_line}} @param	{{ arg.value | get_data_type(arg.type) | lower }}{% for p in previous_params %}{% if p.description and (p.name|trim) == (arg.name|trim) %}\t{{ p.description | default("") | trim }}{% endif %}{% endfor %}',
+				'{%- endfor %}',
 
-			...todo,
+				...global,
+				...todo,
 
-			' */',
-			'{%- endfor -%}'
-		]
-	}],
+				'{{ block_end }}',
+				'{%- endfor -%}'
+			]
+		}
+	],
 };
